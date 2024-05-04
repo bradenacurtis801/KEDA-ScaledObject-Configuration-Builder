@@ -1,0 +1,77 @@
+{
+    "triggers": {
+        "cpu": {
+            "metricTypes": {
+                "uiComponent": "dropdown",
+                "options": ["Utilization", "AverageValue"],
+                "descriptions": {}
+            },
+            "metadata": {
+                "type": {
+                    "uiComponent": "dropdown",
+                    "options": ["Utilization", "AverageValue"],
+                    "descriptions": {
+                        "Utilization": "When using Utilization, the target value is the average of the resource metric across all relevant pods, represented as a percentage of the requested value of the resource for the pods.",
+                        "AverageValue": "When using AverageValue, the target value is the total across all relevant pods, represented as a raw value."
+                    }
+                },
+                "value": {
+                    "uiComponent": "input",
+                    "type": "Integer",
+                    "description": "The target value to scale on."
+                },
+                "containerName": {
+                    "uiComponent": "input",
+                    "type": "String",
+                    "optional": true,
+                    "description": "Name of the specific container to scale based on its CPU, rather than the entire pod. Defaults to empty if not specified."
+                }
+            }
+        },
+        "rabbitmq": {
+            "metadata": {
+                "host": {
+                    "uiComponent": "input",
+                    "type": "String",
+                    "optional": true,
+                    "description": "The host of the RabbitMQ server."
+                },
+                "protocol": {
+                    "uiComponent": "dropdown",
+                    "options": ["amqp", "http", "auto"],
+                    "descriptions": {
+                        "amqp": "AMQP protocol",
+                        "http": "HTTP protocol",
+                        "auto": "autodetect based on the `host` value."
+                    }
+                },
+                "mode": {
+                    "uiComponent": "dropdown",
+                    "options": ["QueueLength", "MessageRate"],
+                    "descriptions": {
+                        "QueueLength": "QueueLength to trigger on number of messages in the queue.",
+                        "MessageRate": "MessageRate to trigger on the published rate into the queue."
+                    }
+                },
+                "value": {
+                    "uiComponent": "input",
+                    "type": "Integer",
+                    "description": "Message backlog or Publish/sec. rate to trigger on. (This value can be a float when mode: MessageRate)"
+                },
+                "activationValue": {
+                    "uiComponent": "input",
+                    "type": "Integer",
+                    "optional": true,
+                    "description": "Target value for activating the scaler. Learn more about activation here.(Default: 0, Optional, This value can be a float)"
+                },
+                "queueName": {},
+                "vhostName": {},
+                "hostFromEnv": {},
+                "unsafeSsl": {}
+            }
+        },
+        "memory": {},
+        "cron": {},
+        "etcd": {}
+    }
+}

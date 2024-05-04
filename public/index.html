@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>KEDA ScaledObject Configuration Builder</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="./highlight/styles/obsidian.css" />
+    <script src="./highlight/highlight.min.js"></script>
+    <script>
+        hljs.highlightAll();
+      </script>
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('http://localhost:5500/options')
+                .then(response => response.json())
+                .then(data => {
+                    window.config = data;
+                    updatePreview();  // Update the preview initially in case there are default values
+                })
+                .catch(error => console.error('Error loading the configuration:', error));
+        });
+
+        const INDENTATION_SPACE = '  '; // Two spaces for YAML indentation
+
+        function updatePreview() {
+            const yamlOutputElement = document.getElementById('yamlPreview');
+            if (!yamlOutputElement) {
+                console.error('The YAML output element does not exist!');
+                return;
+            }
+        
+            // Clear previous content
+            yamlOutputElement.innerHTML = '';
+        
+            // Create the pre and code elements for YAML output
+            const pre = document.createElement('pre');
+            const code = document.createElement('code');
+            code.className = 'language-yaml';
+            pre.appendChild(code);
+            yamlOutputElement.appendChild(pre);
+        
+            // Gather values from input fields
+            const name = document.getElementById('name').value;
+            const deploymentName = document.getElementById('deploymentName').value;
+            const minReplicaCount = document.getElementById('minReplicaCount').value;
+            const maxReplicaCount = document.getElementById('maxReplicaCount').value;
+        
+            // Construct the YAML content
+            let yamlContent = `${INDENTATION_SPACE.repeat(0)}apiVersion: keda.sh/v1alpha1\n` +
+                              `${INDENTATION_SPACE.repeat(0)}kind: ScaledObject\n` +
+                              `${INDENTATION_SPACE.repeat(0)}metadata:\n` +
+                              `${INDENTATION_SPACE.repeat(1)}name: ${name}\n` +
+                              `${INDENTATION_SPACE.repeat(0)}spec:\n` +
+                              `${INDENTATION_SPACE.repeat(1)}scaleTargetRef:\n` +
+                              `${INDENTATION_SPACE.repeat(2)}name: ${deploymentName}\n` +
+                              `${INDENTATION_SPACE.repeat(1)}minReplicaCount: ${minReplicaCount}\n` +
+                              `${INDENTATION_SPACE.repeat(1)}maxReplicaCount: ${maxReplicaCount}\n` +
+                              `${INDENTATION_SPACE.repeat(1)}triggers:\n`;
+        
+            // Append trigger details
+            document.querySelectorAll('.trigger').forEach(trigger => {
+                const typeSelect = trigger.querySelector('select');
+                const type = typeSelect.value;
+                const metadataDiv = trigger.querySelector('div');
+                let metadata = '';
+                metadataDiv.querySelectorAll('input, select').forEach(input => {
+                    const fieldName = input.name.replace(/[0-9]/g, '').trim();
+                    const fieldValue = input.value;
+                    metadata += `${INDENTATION_SPACE.repeat(4)}${fieldName}: ${fieldValue}\n`;  // 4 spaces for metadata properties
+                });
+                yamlContent += `${INDENTATION_SPACE.repeat(3)}- type: ${type}\n` +  // 3 spaces under triggers
+                               `${INDENTATION_SPACE.repeat(3)}metadata:\n${metadata}`;  // Start metadata at the same level as type
+            });
+        
+            // Set the text content of the code element and apply syntax highlighting
+            code.textContent = yamlContent.trim();
+            hljs.highlightElement(code);
+        }
+        
+
+        function addTrigger() {
+            const index = document.querySelectorAll('.trigger').length;
+            const triggerDiv = document.createElement('div');
+            triggerDiv.classList.add('trigger');
+            console.log('config', config)
+            // Ensure that 'config' and 'config.triggers' are properly defined
+            if (!config || !config.triggers) {
+                console.error('Configuration error: No triggers found in the configuration.');
+                alert('Configuration error: No triggers found. Please check the configuration file.');
+                return;  // Stop the function if there is a configuration error
+            }
+
+            triggerDiv.innerHTML = `
+            <select id="triggerType${index}" name="triggerType${index}" onchange="updateMetadataFields(${index})">
+                <option value="">Select a trigger type</option>
+                ${Object.keys(config.triggers).map(type => `<option value="${type}">${type.toUpperCase()}</option>`).join('')}
+            </select>
+            <div id="metadataFields${index}"></div>
+            <button type="button" onclick="removeTrigger(this.parentNode)">Remove Trigger</button>
+        `;
+            document.getElementById('triggersContainer').appendChild(triggerDiv);
+            updatePreview();
+        }
+
+        function updateMetadataFields(index) {
+            const triggerType = document.getElementById(`triggerType${index}`).value;
+            const metadataContainer = document.getElementById(`metadataFields${index}`);
+            metadataContainer.innerHTML = '';
+
+            if (!config.triggers[triggerType]) {
+                alert(`Configuration error: Metadata for trigger type '${triggerType}' is not properly configured.`);
+                return;
+            }
+
+            const triggerConfig = config.triggers[triggerType];
+            if (!triggerConfig.metadata || typeof triggerConfig.metadata !== 'object') {
+                alert(`Configuration error: Incorrect metadata structure for trigger type '${triggerType}'.`);
+                return;
+            }
+
+            const fieldsHtml = Object.keys(triggerConfig.metadata).map(key => {
+                const field = triggerConfig.metadata[key];
+                const labelHtml = `<label for="${key}${index}">${key.charAt(0).toUpperCase() + key.slice(1)}:</label>`;
+                const inputHtml = field.uiComponent === 'dropdown' ?
+                    `<select id="${key}${index}" name="${key}${index}" onchange="updatePreview()">
+                    ${field.options.map(option => `<option value="${option}">${option}</option>`).join('')}
+                </select>` :
+                    `<input type="${field.type.toLowerCase()}" id="${key}${index}" name="${key}${index}" placeholder="${field.description}" oninput="updatePreview()">`;
+
+                return `${labelHtml}${inputHtml}<br>`;
+            }).join('');
+
+            metadataContainer.innerHTML = fieldsHtml;
+            updatePreview();
+        }
+
+        function removeTrigger(triggerDiv) {
+            triggerDiv.remove();
+            updatePreview();
+        }
+
+        function generateYAML() {
+            updatePreview();
+            alert('YAML has been updated in the preview!');
+        }
+
+
+
+    </script>
+</head>
+
+<body>
+    <div class="editor">
+        <form id="scaledObjectForm">
+            <h2>KEDA ScaledObject Configuration</h2>
+            <div class="field">
+                <label>Name:</label>
+                <input type="text" id="name" name="name" required oninput="updatePreview()">
+            </div>
+            <div class="field">
+                <label>Deployment Name:</label>
+                <input type="text" id="deploymentName" name="deploymentName" required oninput="updatePreview()">
+            </div>
+            <div class="field">
+                <label>Min Replica Count:</label>
+                <input type="number" id="minReplicaCount" name="minReplicaCount" value="1" required
+                    oninput="updatePreview()">
+            </div>
+            <div class="field">
+                <label>Max Replica Count:</label>
+                <input type="number" id="maxReplicaCount" name="maxReplicaCount" value="10" required
+                    oninput="updatePreview()">
+            </div>
+            <div id="triggersContainer"></div>
+            <button type="button" onclick="addTrigger()">Add Trigger</button>
+            <button type="button" onclick="generateYAML()">Generate YAML</button>
+        </form>
+        <div id="yamlPreview"></div>
+
+    </div>
+</body>
+
+</html>

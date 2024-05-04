@@ -1,0 +1,36 @@
+body, input, select, button {
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.editor {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+form {
+    width: 50%;
+}
+
+.field label {
+    width: 150px;
+    display: inline-block;
+}
+
+.field input, .field select {
+    width: 300px;
+}
+
+button {
+    margin-top: 10px;
+    margin-right: 10px;
+}
+
+#yamlPreview {
+    border: 1px solid #ccc;
+    padding: 10px;
+    width: 45%;
+    height: auto;
+    overflow-y: auto;
+    background-color: #f4f4f4;
+}
